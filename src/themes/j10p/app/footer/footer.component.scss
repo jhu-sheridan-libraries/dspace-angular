@@ -1,0 +1,41 @@
+:host {
+  footer {
+    background-color: var(--ds-footer-bg);
+    z-index: var(--ds-footer-z-index);
+    border-top: var(--ds-footer-border);
+    padding: var(--ds-footer-padding);
+    padding-top: var(--j10p-footer-padding-top);
+    padding-bottom: var(--j10p-footer-padding-top);
+
+    p {
+      margin: 0;
+    }
+
+    div > img {
+      height: var(--ds-footer-logo-height);
+    }
+
+    .bottom-footer {
+      ul {
+        li {
+          display: inline-flex;
+
+          a {
+            padding: 0 calc(var(--bs-spacer) / 2);
+            color: inherit
+          }
+
+          &:not(:last-child) {
+            &:after {
+              content: '';
+              border-right: 1px var(--bs-secondary) solid;
+            }
+
+          }
+        }
+      }
+    }
+  }
+}
+
+
