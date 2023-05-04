@@ -3,24 +3,27 @@
 // still uses Sass variables internally. So if you want to override bootstrap (or other sass
 // variables) you can do so here. Their CSS counterparts will include the changes you make here
 
+// These variables ultimately get converted to CSS variables and are namespaced
+// For example, $gray-800 below would become --bs-gray-800
+
 @import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200;0,300;0,400;0,600;0,700;0,800;1,200;1,300;1,400;1,600;1,700;1,800&display=swap');
 
 $font-family-sans-serif: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 
-$navbar-dark-color: #FFFFFF;
+$navbar-dark-color:  #002D72;
 
 /* Reassign color vars to semantic color scheme */
 $blue: #2b4e72 !default;
 $green: #92C642 !default;
 $cyan: #207698 !default;
-$yellow: #ec9433 !default;
-$red: #CF4444 !default;
+$yellow: #F1C400 !default;
+$red: #A6192E !default;
 $dark: #43515f !default;
 
-$gray-800: #343a40 !default;
-$gray-700: #495057 !default;
-$gray-400: #ced4da !default;
-$gray-100: #f8f9fa !default;
+$gray-800: #1F1D1B !default;
+$gray-700: #534D48 !default;
+$gray-400: #9C958D !default;
+$gray-100: #e5e2e0 !default;
 
 $body-color: $gray-800 !default;                    // Bootstrap $gray-800
 
