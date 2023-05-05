@@ -60,8 +60,11 @@ import { ResultsBackButtonModule } from '../../app/shared/results-back-button/re
 import { SharedBrowseByModule } from '../../app/shared/browse-by/shared-browse-by.module';
 import { ItemVersionsModule } from '../../app/item-page/versions/item-versions.module';
 import { ItemSharedModule } from 'src/app/item-page/item-shared.module';
+// Lazy loaded custom theme components
+import { HomePageComponent } from './app/home-page/home-page.component';
 
 const DECLARATIONS = [
+  HomePageComponent
 ];
 
 @NgModule({

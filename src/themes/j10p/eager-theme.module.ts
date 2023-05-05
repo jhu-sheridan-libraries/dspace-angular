@@ -1,15 +1,15 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SharedModule } from '../../app/shared/shared.module';
-import { FooterComponent } from './app/footer/footer.component';
-import { HomeNewsComponent } from './app/home-page/home-news/home-news.component';
-import { NavbarComponent } from './app/navbar/navbar.component';
-import { HeaderComponent } from './app/header/header.component';
-import { HeaderNavbarWrapperComponent } from './app/header-nav-wrapper/header-navbar-wrapper.component';
 import { RootModule } from '../../app/root.module';
 import { NavbarModule } from '../../app/navbar/navbar.module';
 import { SharedBrowseByModule } from '../../app/shared/browse-by/shared-browse-by.module';
 import { ResultsBackButtonModule } from '../../app/shared/results-back-button/results-back-button.module';
+// Custom theme components
+import { FooterComponent } from './app/footer/footer.component';
+import { NavbarComponent } from './app/navbar/navbar.component';
+import { HeaderComponent } from './app/header/header.component';
+import { HeaderNavbarWrapperComponent } from './app/header-nav-wrapper/header-navbar-wrapper.component';
 
 /**
  * Add components that use a custom decorator to ENTRY_COMPONENTS as well as DECLARATIONS.
@@ -20,7 +20,6 @@ const ENTRY_COMPONENTS = [];
 const DECLARATIONS = [
   ...ENTRY_COMPONENTS,
   FooterComponent,
-  HomeNewsComponent,
   HeaderComponent,
   HeaderNavbarWrapperComponent,
   NavbarComponent,
