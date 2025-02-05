@@ -6,6 +6,10 @@ name: Build
 # Run this Build for all pushes / PRs to current branch
 on: [push, pull_request]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read  #  to fetch code (actions/checkout)
 
@@ -34,22 +38,23 @@ jobs:
       # Bump Node heap size (OOM in CI after upgrading to Angular 15)
       NODE_OPTIONS: '--max-old-space-size=4096'
     strategy:
-      # Create a matrix of Node versions to test against (in parallel)
       matrix:
-        node-version: [18.x]
-      # Do NOT exit immediately if one matrix job fails
+        node-version: [20.x]
       fail-fast: false
     # These are the actual CI steps to perform per job
     steps:
       # https://github.com/actions/checkout
       - name: Checkout codebase
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1  # Shallow clone
 
       # https://github.com/actions/setup-node
       - name: Install Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+          cache: 'yarn'  # Enable built-in caching for yarn
 
       # If CHROME_VERSION env variable specified above, then pin to that version.
       # Otherwise, just install latest version of Chrome.
@@ -72,11 +77,9 @@ jobs:
         id: yarn-cache-dir-path
         run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
       - name: Cache Yarn dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
-          # Cache entire Yarn cache directory (see previous step)
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          # Cache key is hash of yarn.lock. Therefore changes to yarn.lock will invalidate cache
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: ${{ runner.os }}-yarn-
 
@@ -182,6 +185,18 @@ jobs:
       - name: Shutdown Docker containers
         run: docker compose -f ./docker/docker-compose-ci.yml down
 
+      - name: Cache Chrome
+        uses: actions/cache@v4
+        with:
+          path: /usr/bin/google-chrome
+          key: ${{ runner.os }}-chrome-${{ env.CHROME_VERSION || 'latest' }}
+
+      - name: Cache Cypress binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('**/package.json') }}
+
   # Codecov upload is a separate job in order to allow us to restart this separate from the entire build/test
   # job above. This is necessary because Codecov uploads seem to randomly fail at times.
   # See https://community.codecov.com/t/upload-issues-unable-to-locate-build-via-github-actions-api/3954
@@ -191,11 +206,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       # Download artifacts from previous 'tests' job
       - name: Download coverage artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       # Now attempt upload to Codecov using its action.
       # NOTE: We use a retry action to retry the Codecov upload if it fails the first time.
