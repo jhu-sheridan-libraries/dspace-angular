@@ -41,6 +41,7 @@
             "aot": true,
             "assets": [
               "src/assets",
+              "src/favicon.ico",
               "src/robots.txt"
             ],
             "styles": [
@@ -147,7 +148,8 @@
               "vendor": false
             },
             "assets": [
-              "src/assets"
+              "src/assets",
+              "src/favicon.ico"
             ],
             "styles": [
               {
