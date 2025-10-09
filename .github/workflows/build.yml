@@ -184,6 +184,7 @@ jobs:
 
       # Start up the app with SSR enabled (run in background)
       - name: Start app in SSR (server-side rendering) mode
+        if: github.repository == 'dspace/dspace-angular'
         run: |
           nohup npm run serve:ssr &
           printf 'Waiting for app to start'
@@ -197,7 +198,9 @@ jobs:
       # If it does, then SSR is working, as this tag is created by our MetadataService.
       # This step also prints entire HTML of homepage for easier debugging if grep fails.
       - name: Verify SSR (server-side rendering) on Homepage
+        if: github.repository == 'dspace/dspace-angular'
         run: |
+          wget -O- -q http://127.0.0.1:4000/home
           result=$(wget -O- -q http://127.0.0.1:4000/home)
           echo "$result"
           echo "$result" | grep -oE "<meta name=\"title\" [^>]*>" | grep DSpace
@@ -205,6 +208,7 @@ jobs:
       # Get a specific community in our test data and verify that the "<h1>" tag includes "Publications" (the community name).
       # If it does, then SSR is working.
       - name: Verify SSR on a Community page
+        if: github.repository == 'dspace/dspace-angular'
         run: |
           result=$(wget -O- -q http://127.0.0.1:4000/communities/0958c910-2037-42a9-81c7-dca80e3892b4)
           echo "$result"
@@ -213,6 +217,7 @@ jobs:
       # Get a specific collection in our test data and verify that the "<h1>" tag includes "Articles" (the collection name).
       # If it does, then SSR is working.
       - name: Verify SSR on a Collection page
+        if: github.repository == 'dspace/dspace-angular'
         run: |
           result=$(wget -O- -q http://127.0.0.1:4000/collections/282164f5-d325-4740-8dd1-fa4d6d3e7200)
           echo "$result"
@@ -221,6 +226,7 @@ jobs:
       # Get a specific publication in our test data and verify that the <meta name="title"> tag includes
       # the title of this publication. If it does, then SSR is working.
       - name: Verify SSR on a Publication page
+        if: github.repository == 'dspace/dspace-angular'
         run: |
           result=$(wget -O- -q http://127.0.0.1:4000/entities/publication/6160810f-1e53-40db-81ef-f6621a727398)
           echo "$result"
@@ -229,6 +235,7 @@ jobs:
       # Get a specific person in our test data and verify that the <meta name="title"> tag includes
       # the name of the person. If it does, then SSR is working.
       - name: Verify SSR on a Person page
+        if: github.repository == 'dspace/dspace-angular'
         run: |
           result=$(wget -O- -q http://127.0.0.1:4000/entities/person/b1b2c768-bda1-448a-a073-fc541e8b24d9)
           echo "$result"
@@ -237,6 +244,7 @@ jobs:
       # Get a specific project in our test data and verify that the <meta name="title"> tag includes
       # the name of the project. If it does, then SSR is working.
       - name: Verify SSR on a Project page
+        if: github.repository == 'dspace/dspace-angular'
         run: |
           result=$(wget -O- -q http://127.0.0.1:4000/entities/project/46ccb608-a74c-4bf6-bc7a-e29cc7defea9)
           echo "$result"
@@ -245,6 +253,7 @@ jobs:
       # Get a specific orgunit in our test data and verify that the <meta name="title"> tag includes
       # the name of the orgunit. If it does, then SSR is working.
       - name: Verify SSR on an OrgUnit page
+        if: github.repository == 'dspace/dspace-angular'
         run: |
           result=$(wget -O- -q http://127.0.0.1:4000/entities/orgunit/9851674d-bd9a-467b-8d84-068deb568ccf)
           echo "$result"
@@ -253,6 +262,7 @@ jobs:
       # Get a specific journal in our test data and verify that the <meta name="title"> tag includes
       # the name of the journal. If it does, then SSR is working.
       - name: Verify SSR on a Journal page
+        if: github.repository == 'dspace/dspace-angular'
         run: |
           result=$(wget -O- -q http://127.0.0.1:4000/entities/journal/d4af6c3e-53d0-4757-81eb-566f3b45d63a)
           echo "$result"
@@ -261,6 +271,7 @@ jobs:
       # Get a specific journal volume in our test data and verify that the <meta name="title"> tag includes
       # the name of the volume. If it does, then SSR is working.
       - name: Verify SSR on a Journal Volume page
+        if: github.repository == 'dspace/dspace-angular'
         run: |
           result=$(wget -O- -q http://127.0.0.1:4000/entities/journalvolume/07c6249f-4bf7-494d-9ce3-6ffdb2aed538)
           echo "$result"
@@ -269,6 +280,7 @@ jobs:
       # Get a specific journal issue in our test data and verify that the <meta name="title"> tag includes
       # the name of the issue. If it does, then SSR is working.
       - name: Verify SSR on a Journal Issue page
+        if: github.repository == 'dspace/dspace-angular'
         run: |
           result=$(wget -O- -q http://127.0.0.1:4000/entities/journalissue/44c29473-5de2-48fa-b005-e5029aa1a50b)
           echo "$result"
@@ -277,6 +289,7 @@ jobs:
       # Verify 301 Handle redirect behavior
       # Note: /handle/123456789/260 is the same test Publication used by our e2e tests
       - name: Verify 301 redirect from '/handle' URLs
+        if: github.repository == 'dspace/dspace-angular'
         run: |
           result=$(wget --server-response --quiet http://127.0.0.1:4000/handle/123456789/260 2>&1 | head -1 | awk '{print $2}')
           echo "$result"
@@ -284,6 +297,7 @@ jobs:
 
       # Verify 403 error code behavior
       - name: Verify 403 error code from '/403'
+        if: github.repository == 'dspace/dspace-angular'
         run: |
           result=$(wget --server-response --quiet http://127.0.0.1:4000/403 2>&1 | head -1 | awk '{print $2}')
           echo "$result"
@@ -291,6 +305,7 @@ jobs:
 
       # Verify 404 error code behavior
       - name: Verify 404 error code from '/404' and on invalid pages
+        if: github.repository == 'dspace/dspace-angular'
         run: |
           result=$(wget --server-response --quiet http://127.0.0.1:4000/404 2>&1 | head -1 | awk '{print $2}')
           echo "$result"
@@ -300,12 +315,14 @@ jobs:
 
       # Verify 500 error code behavior
       - name: Verify 500 error code from '/500'
+        if: github.repository == 'dspace/dspace-angular'
         run: |
           result=$(wget --server-response --quiet http://127.0.0.1:4000/500 2>&1 | head -1 | awk '{print $2}')
           echo "$result"
           [[ "$result" -eq "500" ]]
 
       - name: Stop running app
+        if: github.repository == 'dspace/dspace-angular'
         run: kill -9 $(lsof -t -i:4000)
 
       - name: Shutdown Docker containers
