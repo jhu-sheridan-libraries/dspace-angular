@@ -122,6 +122,7 @@ jobs:
 
       # Login to our Docker registry, so that we can access private Docker images using "docker compose" below.
       - name: Login to ${{ env.DOCKER_REGISTRY }}
+        if: github.repository == 'dspace/dspace-angular'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.DOCKER_REGISTRY }}
@@ -131,6 +132,7 @@ jobs:
       # Using "docker compose" start backend using CI configuration
       # and load assetstore from a cached copy
       - name: Start DSpace REST Backend via Docker (for e2e tests)
+        if: github.repository == 'dspace/dspace-angular'
         run: |
           docker compose -f ./docker/docker-compose-ci.yml up -d
           docker compose -f ./docker/cli.yml -f ./docker/cli.assetstore.yml run --rm dspace-cli
@@ -140,6 +142,7 @@ jobs:
       # https://github.com/cypress-io/github-action
       # (NOTE: to run these e2e tests locally, just use 'ng e2e')
       - name: Run e2e tests (integration tests)
+        if: github.repository == 'dspace/dspace-angular'
         uses: cypress-io/github-action@v6
         with:
           # Run tests in Chrome, headless mode (default)
@@ -156,7 +159,7 @@ jobs:
       # Save those in an Artifact
       - name: Upload e2e test videos to Artifacts
         uses: actions/upload-artifact@v4
-        if: always()
+        if: github.repository == 'dspace/dspace-angular' && always()
         with:
           name: e2e-test-videos-${{ matrix.node-version }}
           path: cypress/videos
@@ -165,12 +168,13 @@ jobs:
       # Save those in an Artifact
       - name: Upload e2e test failure screenshots to Artifacts
         uses: actions/upload-artifact@v4
-        if: failure()
+        if: github.repository == 'dspace/dspace-angular' && failure()
         with:
           name: e2e-test-screenshots-${{ matrix.node-version }}
           path: cypress/screenshots
 
       - name: Stop app (in case it stays up after e2e tests)
+        if: github.repository == 'dspace/dspace-angular'
         run: |
           app_pid=$(lsof -t -i:4000)
           if [[ ! -z $app_pid ]]; then
@@ -305,6 +309,7 @@ jobs:
         run: kill -9 $(lsof -t -i:4000)
 
       - name: Shutdown Docker containers
+        if: github.repository == 'dspace/dspace-angular'
         run: docker compose -f ./docker/docker-compose-ci.yml down
 
   # Codecov upload is a separate job in order to allow us to restart this separate from the entire build/test
@@ -313,6 +318,7 @@ jobs:
   codecov:
     # Must run after 'tests' job above
     needs: tests
+    if: github.repository == 'dspace/dspace-angular'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
