@@ -552,7 +552,9 @@ export class AuthService {
    * Refresh route navigated
    */
   public refreshAfterLogout() {
-    this.navigateToRedirectUrl(undefined);
+    const currentRoute = this.hardRedirectService.getCurrentRoute();
+    const redirectUrl = currentRoute?.startsWith(LOGOUT_ROUTE) ? undefined : currentRoute;
+    this.navigateToRedirectUrl(redirectUrl);
   }
 
   /**
