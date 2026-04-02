@@ -621,6 +621,10 @@ export class AuthService {
       // change the redirect url with the current page url
       const newRedirectUrl = `?redirectUrl=${correctRedirectUrl}`;
       externalServerUrl = location.replace(/\?redirectUrl=(.*)/g, newRedirectUrl);
+    } else if (redirectUrlFromServer !== correctRedirectUrl) {
+      const appendedUrl = new URL(externalServerUrl);
+      appendedUrl.searchParams.set('redirectUrl', correctRedirectUrl);
+      externalServerUrl = appendedUrl.toString();
     }
 
     return externalServerUrl;

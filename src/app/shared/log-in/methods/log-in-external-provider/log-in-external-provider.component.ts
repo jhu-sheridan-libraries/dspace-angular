@@ -119,7 +119,7 @@ export class LogInExternalProviderComponent implements OnInit {
       }
       // Persist the redirect URL in a cookie so it survives the hard redirect 
       // to the external provider and back
-      this.authService.setRedirectUrl(redirectRoute);
+      // this.authService.setRedirectUrl(redirectRoute);
 
       // This intends on appending the 'redirectRoute' as a query param
       // to send to the external provider
