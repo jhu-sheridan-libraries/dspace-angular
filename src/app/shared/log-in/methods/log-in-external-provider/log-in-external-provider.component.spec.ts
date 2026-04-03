@@ -35,6 +35,7 @@ describe('LogInExternalProviderComponent', () => {
   let location: string;
   let initialState: any;
   let hardRedirectService: HardRedirectService;
+  let authService: AuthService;
 
   beforeEach(() => {
     orcidBaseUrl = 'dspace-rest.test/orcid?redirectUrl=';
@@ -95,6 +96,8 @@ describe('LogInExternalProviderComponent', () => {
     // create page
     setHrefSpy = spyOnProperty(componentAsAny._window.nativeWindow.location, 'href', 'set').and.callThrough();
 
+    authService = TestBed.inject(AuthService);
+    spyOn(authService, 'setRedirectUrl').and.callThrough();
   });
 
   it('should set the properly a new redirectUrl', () => {
@@ -108,6 +111,7 @@ describe('LogInExternalProviderComponent', () => {
 
     component.redirectToExternalProvider();
 
+    expect(authService.setRedirectUrl).toHaveBeenCalledWith(currentUrl);
     expect(hardRedirectService.redirect).toHaveBeenCalled();
   });
 
@@ -122,6 +126,7 @@ describe('LogInExternalProviderComponent', () => {
 
     component.redirectToExternalProvider();
 
+    expect(authService.setRedirectUrl).toHaveBeenCalledWith('/');
     expect(setHrefSpy).toHaveBeenCalledWith(currentUrl);
 
   });

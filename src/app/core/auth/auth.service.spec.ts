@@ -132,7 +132,7 @@ describe('AuthService test', () => {
     linkService = {
       resolveLinks: {},
     };
-    hardRedirectService = jasmine.createSpyObj('hardRedirectService', ['redirect']);
+    hardRedirectService = jasmine.createSpyObj('hardRedirectService', ['redirect', 'getCurrentRoute']);
     spyOn(linkService, 'resolveLinks').and.returnValue({ authenticated: true, eperson: of({ payload: {} }) });
 
   }
@@ -541,13 +541,15 @@ describe('AuthService test', () => {
       });
     });
 
-    describe('refreshAfterLogout', () => {
-      it('should call navigateToRedirectUrl with no url', () => {
-        spyOn(authService as any, 'navigateToRedirectUrl').and.stub();
-        authService.refreshAfterLogout();
-        expect((authService as any).navigateToRedirectUrl).toHaveBeenCalled();
-      });
-    });
+    // TODO: remove?
+    // Looks like redirecting to /home on logout is intentional
+    // describe('refreshAfterLogout', () => {
+    //   it('should call navigateToRedirectUrl with no url', () => {
+    //     spyOn(authService as any, 'navigateToRedirectUrl').and.stub();
+    //     authService.refreshAfterLogout();
+    //     expect((authService as any).navigateToRedirectUrl).toHaveBeenCalled();
+    //   });
+    // });
 
     describe('getSpecialGroupsFromAuthStatus', () => {
       beforeEach(() => {
@@ -639,6 +641,299 @@ describe('AuthService test', () => {
     it('isUserIdle should return true when user is not idle', () => {
       authService.isUserIdle().subscribe((status: boolean) => {
         expect(status).toBe(true);
+      });
+    });
+  });
+
+  describe('refreshAfterLogout normal cases', () => {
+
+    beforeEach(() => {
+      init();
+      TestBed.configureTestingModule({
+        imports: [
+          CommonModule,
+          StoreModule.forRoot({ authReducer }, {
+            runtimeChecks: {
+              strictStateImmutability: false,
+              strictActionImmutability: false,
+            },
+          }),
+        ],
+        providers: [
+          { provide: AuthRequestService, useValue: authRequest },
+          { provide: NativeWindowService, useValue: window },
+          { provide: REQUEST, useValue: {} },
+          { provide: Router, useValue: routerStub },
+          { provide: RouteService, useValue: routeServiceStub },
+          { provide: ActivatedRoute, useValue: routeStub },
+          { provide: Store, useValue: mockStore },
+          { provide: EPersonDataService, useValue: mockEpersonDataService },
+          { provide: HardRedirectService, useValue: hardRedirectService },
+          { provide: NotificationsService, useValue: NotificationsServiceStub },
+          { provide: TranslateService, useValue: getMockTranslateService() },
+          CookieService,
+          AuthService,
+        ],
+      });
+      authService = TestBed.inject(AuthService);
+    });
+
+    it('should pass current route to navigateToRedirectUrl (concrete case)', () => {
+      const currentRoute = '/search?query=open+access';
+      hardRedirectService.getCurrentRoute.and.returnValue(currentRoute);
+      spyOn(authService as any, 'navigateToRedirectUrl').and.stub();
+      authService.refreshAfterLogout();
+      expect((authService as any).navigateToRedirectUrl).toHaveBeenCalledWith(currentRoute);
+    });
+
+    it('should pass current route for item page', () => {
+      const currentRoute = '/items/abc-123';
+      hardRedirectService.getCurrentRoute.and.returnValue(currentRoute);
+      spyOn(authService as any, 'navigateToRedirectUrl').and.stub();
+      authService.refreshAfterLogout();
+      expect((authService as any).navigateToRedirectUrl).toHaveBeenCalledWith(currentRoute);
+    });
+
+    it('should pass current route for community page', () => {
+      const currentRoute = '/communities/xyz';
+      hardRedirectService.getCurrentRoute.and.returnValue(currentRoute);
+      spyOn(authService as any, 'navigateToRedirectUrl').and.stub();
+      authService.refreshAfterLogout();
+      expect((authService as any).navigateToRedirectUrl).toHaveBeenCalledWith(currentRoute);
+    });
+
+    /**
+     * Property-based test: generate random valid route strings and verify
+     * refreshAfterLogout() passes them through to navigateToRedirectUrl().
+     *
+     * Since this project uses Jasmine (not fast-check), we implement this
+     * as a loop over generated test cases.
+     */
+    it('should pass any valid non-login/non-logout route to navigateToRedirectUrl (property-based)', () => {
+      const pathSegments = [
+        'search', 'items', 'communities', 'collections', 'home',
+        'browse', 'statistics', 'profile', 'admin', 'submit',
+      ];
+      const queryParams = [
+        '', '?query=open+access', '?page=2&size=10',
+        '?f.author=Smith&f.dateIssued.min=2020',
+        '?query=test&sort=score&order=desc',
+      ];
+
+      const generatedRoutes: string[] = [];
+      for (const segment of pathSegments) {
+        for (const query of queryParams) {
+          const route = `/${segment}${query}`;
+          if (!route.startsWith('/login') && !route.startsWith('/logout')) {
+            generatedRoutes.push(route);
+          }
+        }
+      }
+
+      const navSpy = spyOn(authService as any, 'navigateToRedirectUrl').and.stub();
+
+      for (const route of generatedRoutes) {
+        navSpy.calls.reset();
+        hardRedirectService.getCurrentRoute.and.returnValue(route);
+        authService.refreshAfterLogout();
+        expect((authService as any).navigateToRedirectUrl)
+          .withContext(`Expected navigateToRedirectUrl('${route}') but got navigateToRedirectUrl(${navSpy.calls.mostRecent().args[0]})`)
+          .toHaveBeenCalledWith(route);
+      }
+    });
+  });
+
+  describe('refreshAfterLogout preservation', () => {
+    /**
+     * Validates: Requirements 3.1, 3.2, 3.3, 3.4, 3.5
+     *
+     * Property 2: Preservation - Existing Logout Mechanics and Route Filtering Unchanged
+     *
+     * These tests capture the baseline behavior of the UNFIXED code for non-bug-condition
+     * inputs. They MUST PASS on unfixed code and continue to pass after the fix is applied.
+     *
+     * Observations on UNFIXED code:
+     * - navigateToRedirectUrl(undefined) → redirect to reload/{timestamp} with no ?redirect= param
+     * - navigateToRedirectUrl('/login') → does NOT include ?redirect=/login (existing filter)
+     * - navigateToRedirectUrl('/collection/123') → includes ?redirect=%2Fcollection%2F123
+     * - refreshAfterLogout() always calls navigateToRedirectUrl(undefined) on unfixed code
+     */
+
+    beforeEach(waitForAsync(() => {
+      init();
+      TestBed.configureTestingModule({
+        imports: [
+          StoreModule.forRoot({ authReducer }, {
+            runtimeChecks: {
+              strictStateImmutability: false,
+              strictActionImmutability: false,
+            },
+          }),
+        ],
+        providers: [
+          { provide: AuthRequestService, useValue: authRequest },
+          { provide: REQUEST, useValue: {} },
+          { provide: Router, useValue: routerStub },
+          { provide: RouteService, useValue: routeServiceStub },
+          { provide: RemoteDataBuildService, useValue: linkService },
+          ClientCookieService,
+          CookieService,
+          AuthService,
+        ],
+      }).compileComponents();
+    }));
+
+    beforeEach(inject([ClientCookieService, AuthRequestService, Store, Router, RouteService],
+      (cookieService: ClientCookieService, authReqService: AuthRequestService, store: Store<AppState>, router: Router, routeService: RouteService) => {
+        store.subscribe((state) => {
+          (state as any).core = Object.create({});
+          (state as any).core.auth = authenticatedState;
+        });
+        authService = new AuthService(window, authReqService, mockEpersonDataService, router, routeService, cookieService, store, hardRedirectService, NotificationsServiceStub as any, getMockTranslateService() as any);
+        storage = (authService as any).storage;
+        spyOn(storage, 'get');
+        spyOn(storage, 'remove');
+        spyOn(storage, 'set');
+      },
+    ));
+
+    describe('navigateToRedirectUrl login route filtering (property-based)', () => {
+      /**
+       * For any route starting with /login, navigateToRedirectUrl should NOT
+       * append a ?redirect= parameter. This is the existing filter that must
+       * be preserved after the fix.
+       */
+      it('should NOT append ?redirect= for any route starting with /login', () => {
+        const loginVariants = [
+          '/login',
+          '/login?expired=true',
+          '/login?redirect=%2Fhome',
+          '/login/shibboleth',
+          '/login?foo=bar&baz=qux',
+        ];
+
+        for (const route of loginVariants) {
+          hardRedirectService.redirect.calls.reset();
+          authService.navigateToRedirectUrl(route);
+          const redirectArg = hardRedirectService.redirect.calls.mostRecent().args[0];
+          expect(redirectArg)
+            .withContext(`navigateToRedirectUrl('${route}') should not include ?redirect=`)
+            .toMatch(/^reload\/[0-9]+$/);
+        }
+      });
+    });
+
+    describe('navigateToRedirectUrl with undefined/empty inputs', () => {
+      /**
+       * For undefined or empty inputs, navigateToRedirectUrl should redirect
+       * to reload/{timestamp} with no query param.
+       */
+      it('should redirect to reload/{timestamp} with no ?redirect= when input is undefined', () => {
+        authService.navigateToRedirectUrl(undefined);
+        expect(hardRedirectService.redirect).toHaveBeenCalledWith(
+          jasmine.stringMatching(/^reload\/[0-9]+$/),
+        );
+      });
+
+      it('should redirect to reload/{timestamp} with no ?redirect= when input is empty string', () => {
+        authService.navigateToRedirectUrl('');
+        expect(hardRedirectService.redirect).toHaveBeenCalledWith(
+          jasmine.stringMatching(/^reload\/[0-9]+$/),
+        );
+      });
+
+      it('should redirect to reload/{timestamp} with no ?redirect= when input is null', () => {
+        authService.navigateToRedirectUrl(null);
+        expect(hardRedirectService.redirect).toHaveBeenCalledWith(
+          jasmine.stringMatching(/^reload\/[0-9]+$/),
+        );
+      });
+    });
+
+    describe('refreshAfterLogout with /logout routes', () => {
+      /**
+       * On UNFIXED code, refreshAfterLogout() always passes undefined to
+       * navigateToRedirectUrl(), regardless of getCurrentRoute(). So for
+       * /logout routes, the result is the same: redirect to reload/{timestamp}
+       * with no ?redirect= param.
+       *
+       * After the fix, /logout routes should STILL result in undefined being
+       * passed (new filter), so the behavior is preserved.
+       */
+      it('should result in redirect to reload/{timestamp} with no ?redirect= for /logout routes (property-based)', () => {
+        const logoutVariants = [
+          '/logout',
+          '/logout?reason=idle',
+          '/logout?redirect=%2Fhome',
+        ];
+
+        for (const route of logoutVariants) {
+          hardRedirectService.redirect.calls.reset();
+          hardRedirectService.getCurrentRoute.and.returnValue(route);
+          authService.refreshAfterLogout();
+          const redirectArg = hardRedirectService.redirect.calls.mostRecent().args[0];
+          expect(redirectArg)
+            .withContext(`refreshAfterLogout() with getCurrentRoute()='${route}' should redirect to reload/{timestamp} with no ?redirect=`)
+            .toMatch(/^reload\/[0-9]+$/);
+        }
+      });
+    });
+
+    describe('navigateToRedirectUrl preserves redirect for valid routes (property-based)', () => {
+      /**
+       * For valid non-login routes, navigateToRedirectUrl should append
+       * ?redirect=<encoded-route>. This existing behavior must be preserved.
+       */
+      it('should append ?redirect= for valid non-login routes', () => {
+        const validRoutes = [
+          '/collection/123',
+          '/home',
+          '/search?query=test',
+          '/items/abc-123',
+          '/communities/xyz',
+          '/browse/title?startsWith=A',
+          '/statistics',
+          '/profile',
+        ];
+
+        for (const route of validRoutes) {
+          hardRedirectService.redirect.calls.reset();
+          authService.navigateToRedirectUrl(route);
+          const redirectArg = hardRedirectService.redirect.calls.mostRecent().args[0];
+          const expectedPattern = new RegExp(
+            '^reload/[0-9]+\\?redirect=' + encodeURIComponent(route).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$',
+          );
+          expect(redirectArg)
+            .withContext(`navigateToRedirectUrl('${route}') should include ?redirect=${encodeURIComponent(route)}`)
+            .toMatch(expectedPattern);
+        }
+      });
+    });
+
+    describe('impersonate preservation', () => {
+      /**
+       * impersonate() must still store the impersonation cookie AND call
+       * refreshAfterLogout(). This behavior must be preserved after the fix.
+       */
+      it('should store impersonation cookie and call refreshAfterLogout', () => {
+        const userId = 'testUserId';
+        spyOn(authService, 'refreshAfterLogout');
+        authService.impersonate(userId);
+        expect(storage.set).toHaveBeenCalledWith(IMPERSONATING_COOKIE, userId);
+        expect(authService.refreshAfterLogout).toHaveBeenCalled();
+      });
+    });
+
+    describe('stopImpersonatingAndRefresh preservation', () => {
+      /**
+       * stopImpersonatingAndRefresh() must still call stopImpersonating()
+       * (which removes the cookie) and then call refreshAfterLogout().
+       */
+      it('should remove impersonation cookie and call refreshAfterLogout', () => {
+        spyOn(authService, 'refreshAfterLogout');
+        authService.stopImpersonatingAndRefresh();
+        expect(storage.remove).toHaveBeenCalledWith(IMPERSONATING_COOKIE);
+        expect(authService.refreshAfterLogout).toHaveBeenCalled();
       });
     });
   });

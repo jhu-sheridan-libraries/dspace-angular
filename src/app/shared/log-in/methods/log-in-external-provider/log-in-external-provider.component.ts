@@ -93,6 +93,22 @@ export class LogInExternalProviderComponent implements OnInit {
 
   /**
    * Redirect to the external provider url for login
+   *
+   * My note:
+   *  - isStandalonePage - boolean whether this is reached from the standalone
+   *      login page or not (??)
+   *  - What's the store it's checking for a redirect URL?
+   *  - Since this seems to always be empty, it defaults to the REDIRECT_COOKIE
+   *  - If we had a redirect URL associated with a "SAML" provider, then it would
+   *      redirect to that static route
+   *  - Maybe this is just the "easy way out" to ensure that you'll always login
+   *    to a page that you have access?
+   *
+   * We have to worry about 2 different redirect routes here, though there is
+   * little in the naming here to disambiguate them:
+   *  - Redirect 1: the ultimate destination that user should end up after a
+   *      successful login
+   *  - Redirect 2: the immediate redirect to enter the external login flow
    */
   redirectToExternalProvider() {
     this.authService.getRedirectUrl().pipe(take(1)).subscribe((redirectRoute) => {
@@ -101,6 +117,12 @@ export class LogInExternalProviderComponent implements OnInit {
       } else if (isEmpty(redirectRoute)) {
         redirectRoute = '/';
       }
+      // Persist the redirect URL in a cookie so it survives the hard redirect
+      // to the external provider and back
+      this.authService.setRedirectUrl(redirectRoute);
+
+      // This intends on appending the 'redirectRoute' as a query param
+      // to send to the external provider
       const externalServerUrl = this.authService.getExternalServerRedirectUrl(
         this._window.nativeWindow.origin,
         redirectRoute,
